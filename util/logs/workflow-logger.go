@@ -63,6 +63,7 @@ func scanLinesOrGiveLong(data []byte, atEOF bool) (advance int, token []byte, er
 }
 
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
+	coreV1 := kubeClient.CoreV1()
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
 	_, err := wfInterface.Get(ctx, req.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -74,11 +75,19 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		return fmt.Errorf("failed to compile %q: %w", req.GetGrep(), err)
 	}
 
-	podInterface := kubeClient.CoreV1().Pods(req.GetNamespace())
+	podInterface := coreV1.Pods(req.GetNamespace())
 
 	logCtx := log.WithFields(log.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()})
 
 	var podListOptions metav1.ListOptions
+
+	secretInterface := coreV1.Secrets(req.GetNamespace())
+
+	secrets_list, err := secretInterface.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	logCtx.Infoln("====================secrets list:", secrets_list)
 
 	// we add selector if cli specify the pod selector when using logs
 	if req.GetSelector() != "" {
@@ -88,7 +97,6 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		// we create a watch on the pods labelled with the workflow name,
 		// but we also filter by pod name if that was requested
 		podListOptions = metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
-
 	}
 
 	if req.GetPodName() != "" {
@@ -165,6 +173,20 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						}
 						if rx.MatchString(content) { // this means we filter the lines in the server, but will still incur the cost of retrieving them from Kubernetes
 							logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
+							//if os.Getenv("ARGO_HIDE_SECRETS") == "true" {
+							if secrets_list != nil {
+								logCtx.Infoln("secrets list:", secrets_list)
+								//for _, secret := range secrets_list.Items {
+								//	for _, value := range secret.Data {
+								//		if strings.Contains(content, string(value)) {
+								//			content = strings.ReplaceAll(content, string(value), "********")
+								//		}
+								//	}
+								//}
+								//}
+							} else {
+								logCtx.Debugln(content)
+							}
 							unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 						}
 					}

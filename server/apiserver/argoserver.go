@@ -112,6 +112,7 @@ type ArgoServerOpts struct {
 	AccessControlAllowOrigin string
 	APIRateLimit             uint64
 	AllowedLinkProtocol      []string
+	HideScerets              bool
 }
 
 func init() {

@@ -63,6 +63,7 @@ func NewRootCommand() *cobra.Command {
 		namespaced              bool   // --namespaced
 		managedNamespace        string // --managed-namespace
 		executorPlugins         bool
+		hideSecrets             bool // --hide-secrets
 	)
 
 	command := cobra.Command{
@@ -190,6 +191,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
+	command.Flags().BoolVar(&hideSecrets, "hide-secrets", true, "hide secrets from logs")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")

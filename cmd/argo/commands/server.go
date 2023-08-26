@@ -60,6 +60,7 @@ func NewServerCommand() *cobra.Command {
 		kubeAPIBurst             int
 		allowedLinkProtocol      []string
 		logFormat                string // --log-format
+		hideSecrets              bool
 	)
 
 	command := cobra.Command{
@@ -113,6 +114,7 @@ See %s`, help.ArgoServer),
 				"ssoNamespace":     ssoNamespace,
 				"baseHRef":         baseHRef,
 				"secure":           secure,
+				"hideSecrets":      hideSecrets,
 			}).Info()
 
 			var tlsConfig *tls.Config
@@ -139,6 +141,10 @@ See %s`, help.ArgoServer),
 
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
+			}
+
+			if !hideSecrets {
+				log.Warn("You are running with logging include secrets. Be careful.")
 			}
 
 			modes := auth.Modes{}
@@ -171,6 +177,7 @@ See %s`, help.ArgoServer),
 				AccessControlAllowOrigin: accessControlAllowOrigin,
 				APIRateLimit:             apiRateLimit,
 				AllowedLinkProtocol:      allowedLinkProtocol,
+				HideScerets:              hideSecrets,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -236,6 +243,7 @@ See %s`, help.ArgoServer),
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
 	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")
+	command.Flags().BoolVar(&hideSecrets, "hide-secrets", true, "hide secrets from logs")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")

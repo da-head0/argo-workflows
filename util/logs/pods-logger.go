@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"os"
 	"regexp"
 	"sync"
 
@@ -26,6 +27,11 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 		return err
 	}
 	podInterface := coreV1.Pods(namespace)
+	podSecretInterface := coreV1.Secrets(namespace)
+	secretList, err := podSecretInterface.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
 	list, err := podInterface.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
@@ -57,6 +63,14 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 						}
 						data := s.Bytes()
 						if rx.Match(data) {
+							if os.Getenv("ARGO_HIDE_SECRETS") == "true" {
+								for _, secret := range secretList.Items {
+									//if rx.Match(secret.Data.Bytes()) {
+									logCtx.Infoln("Hiding secret", secret)
+									data = []byte(rx.ReplaceAllString(string(data), "********"))
+									//}
+								}
+							}
 							logCtx.Debugln(string(data))
 							if err := callback(pod, data); err != nil {
 								return err
