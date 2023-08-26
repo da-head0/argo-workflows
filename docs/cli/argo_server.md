@@ -27,6 +27,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --event-operation-queue-size int       how many events operations that can be queued at once (default 16)
       --event-worker-count int               how many event workers to run (default 4)
   -h, --help                                 help for server
+      --hide-secrets                         hide secrets from logs (default true)
       --hsts                                 Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled. (default true)
       --kube-api-burst int                   Burst to use while talking with kube-apiserver. (default 30)
       --kube-api-qps float32                 QPS to use while talking with kube-apiserver. (default 20)
